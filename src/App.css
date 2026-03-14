@@ -1,0 +1,62 @@
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+}
+
+.app{
+  padding:20px;
+}
+
+.tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:6px;
+  background:#3b82f6;
+  color:white;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#2563eb;
+}
+
+.content{
+  background:#020617;
+  padding:20px;
+  border-radius:8px;
+}
+
+pre{
+  background:#000;
+  padding:10px;
+  border-radius:6px;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.15s ease;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
