@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
+import { saveProblemProgress, getProblemProgress } from "./useFirestore";
 import API from "./config";
 
-function PracticeProblems({ theme }) {
+function PracticeProblems({ theme, userId }) {
 
   const [problems, setProblems] = useState({});
   const [activeCategory, setActiveCategory] = useState("basic");
   const [revealed, setRevealed] = useState({});
   const [search, setSearch] = useState("");
-  const [solved, setSolved] = useState(() => {
-    const saved = localStorage.getItem("solvedProblems");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [solved, setSolved] = useState({});
 
   const isDark = theme === "dark";
   const colors = {
@@ -25,23 +23,28 @@ function PracticeProblems({ theme }) {
     solutionText: isDark ? "#86efac" : "#166534",
   };
 
+  // Load problems from backend
   useEffect(() => {
     fetch(`${API}/problems`)
       .then(res => res.json())
       .then(data => setProblems(data));
   }, []);
 
+  // Load solved progress from Firestore
   useEffect(() => {
-    localStorage.setItem("solvedProblems", JSON.stringify(solved));
-  }, [solved]);
+    if (!userId) return;
+    getProblemProgress(userId).then(data => setSolved(data));
+  }, [userId]);
 
   const toggle = (id, type) => {
     const key = `${id}-${type}`;
     setRevealed(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const toggleSolved = (id) => {
-    setSolved(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleSolved = async (id) => {
+    const newVal = !solved[id];
+    setSolved(prev => ({ ...prev, [id]: newVal }));
+    if (userId) await saveProblemProgress(userId, id, newVal);
   };
 
   const categories = [
@@ -74,6 +77,7 @@ function PracticeProblems({ theme }) {
 
       <h2>📚 Practice Problems</h2>
 
+      {/* Overall Progress */}
       <div style={{
         background: colors.card, borderRadius: "10px",
         padding: "16px", marginBottom: "20px",
@@ -96,6 +100,7 @@ function PracticeProblems({ theme }) {
           }} />
         </div>
 
+        {/* Per-category mini bars */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           {categories.map(cat => {
             const s = solvedCount(cat.key);
@@ -121,7 +126,12 @@ function PracticeProblems({ theme }) {
 
         {totalSolved > 0 && (
           <button
-            onClick={() => { if (window.confirm("Reset all progress?")) setSolved({}); }}
+            onClick={() => {
+              if (window.confirm("Reset all progress?")) {
+                setSolved({});
+                if (userId) saveProblemProgress(userId, "__reset__", false);
+              }
+            }}
             style={{
               marginTop: "12px", background: "transparent",
               color: "#ef4444", border: "1px solid #ef4444",
@@ -134,6 +144,7 @@ function PracticeProblems({ theme }) {
         )}
       </div>
 
+      {/* Search */}
       <input
         placeholder="🔍 Search problems..."
         value={search}
@@ -148,6 +159,7 @@ function PracticeProblems({ theme }) {
         }}
       />
 
+      {/* Category Tabs */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
         {categories.map(cat => (
           <button
@@ -172,6 +184,7 @@ function PracticeProblems({ theme }) {
         {search && ` for "${search}"`}
       </p>
 
+      {/* Problem Cards */}
       {currentProblems.map((p) => (
         <div key={p.id} style={{
           background: solved[p.id] ? (isDark ? "#14532d" : "#dcfce7") : colors.bg,

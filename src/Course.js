@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
+import { saveLessonProgress, getLessonProgress } from "./useFirestore";
 import API from "./config";
 
-function Course({ theme }) {
+function Course({ theme, userId }) {
 
   const [lessons, setLessons] = useState({});
   const [activeCategory, setActiveCategory] = useState("beginner");
   const [activeLesson, setActiveLesson] = useState(null);
-  const [completed, setCompleted] = useState(() => {
-    const saved = localStorage.getItem("completedLessons");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [completed, setCompleted] = useState({});
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
 
@@ -27,11 +25,12 @@ function Course({ theme }) {
   };
 
   const categories = [
-    { key: "beginner",     label: "🟢 Beginner",     color: "#22c55e" },
-    { key: "intermediate", label: "🟡 Intermediate",  color: "#f59e0b" },
-    { key: "advanced",     label: "🔴 Advanced",      color: "#ef4444" },
+    { key: "beginner",     label: "🟢 Beginner",    color: "#22c55e" },
+    { key: "intermediate", label: "🟡 Intermediate", color: "#f59e0b" },
+    { key: "advanced",     label: "🔴 Advanced",     color: "#ef4444" },
   ];
 
+  // Load lessons from backend
   useEffect(() => {
     fetch(`${API}/course`)
       .then(res => res.json())
@@ -44,12 +43,16 @@ function Course({ theme }) {
       });
   }, []);
 
+  // Load completed lessons from Firestore
   useEffect(() => {
-    localStorage.setItem("completedLessons", JSON.stringify(completed));
-  }, [completed]);
+    if (!userId) return;
+    getLessonProgress(userId).then(data => setCompleted(data));
+  }, [userId]);
 
-  const toggleComplete = (id) => {
-    setCompleted(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleComplete = async (id) => {
+    const newVal = !completed[id];
+    setCompleted(prev => ({ ...prev, [id]: newVal }));
+    if (userId) await saveLessonProgress(userId, id, newVal);
   };
 
   const runExample = async (code) => {
@@ -69,8 +72,7 @@ function Course({ theme }) {
     (lessons[cat] || []).filter(l => completed[l.id]).length;
   const totalCount = (cat) => (lessons[cat] || []).length;
 
-  const totalCompleted = Object.values(lessons)
-    .flat().filter(l => completed[l.id]).length;
+  const totalCompleted = Object.values(lessons).flat().filter(l => completed[l.id]).length;
   const totalLessons = Object.values(lessons).flat().length;
 
   const activeColor = categories.find(c => c.key === activeCategory)?.color || "#3b82f6";
@@ -80,6 +82,7 @@ function Course({ theme }) {
 
       <h2>📖 Python Course</h2>
 
+      {/* Course Progress Bar */}
       <div style={{
         background: colors.card, borderRadius: "10px",
         padding: "16px", marginBottom: "20px",
@@ -98,6 +101,7 @@ function Course({ theme }) {
         </div>
       </div>
 
+      {/* Category Tabs */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
         {categories.map(cat => (
           <button key={cat.key}
@@ -122,6 +126,7 @@ function Course({ theme }) {
 
       <div style={{ display: "flex", gap: "16px" }}>
 
+        {/* LEFT: Lesson List */}
         <div style={{
           width: "220px", flexShrink: 0,
           background: colors.card, borderRadius: "8px",
@@ -151,6 +156,7 @@ function Course({ theme }) {
           ))}
         </div>
 
+        {/* RIGHT: Lesson Content */}
         <div style={{ flex: 1 }}>
           {activeLesson ? (
             <div style={{
@@ -158,6 +164,7 @@ function Course({ theme }) {
               padding: "20px", border: `1px solid ${colors.border}`
             }}>
 
+              {/* Title + Complete button */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                 <h3 style={{ margin: 0, fontSize: "20px" }}>
                   {activeLesson.title}
@@ -176,6 +183,7 @@ function Course({ theme }) {
                 </button>
               </div>
 
+              {/* Theory */}
               <div style={{
                 background: colors.theoryBg, borderRadius: "8px",
                 padding: "16px", marginBottom: "16px",
@@ -185,6 +193,7 @@ function Course({ theme }) {
                 📘 {activeLesson.theory}
               </div>
 
+              {/* Code Example */}
               <div style={{ marginBottom: "12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                   <strong>💻 Example Code</strong>
@@ -209,6 +218,7 @@ function Course({ theme }) {
                 </pre>
               </div>
 
+              {/* Output */}
               {(runOutput || running) && (
                 <div>
                   <strong>Output:</strong>
@@ -223,6 +233,7 @@ function Course({ theme }) {
                 </div>
               )}
 
+              {/* Navigation */}
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
                 {(() => {
                   const list = lessons[activeCategory] || [];
