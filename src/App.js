@@ -13,6 +13,8 @@ function App() {
   const [theme, setTheme]   = useState("dark");
   const [user, setUser]     = useState(null);
   const [checking, setChecking] = useState(true);
+  const [shareId, setShareId] = useState(null);
+  const [sharedCode, setSharedCode] = useState("");
 
   const isDark = theme === "dark";
   const colors = {
@@ -24,6 +26,17 @@ function App() {
     tabInactive: isDark ? "#1e293b" : "#e2e8f0",
     border:      isDark ? "#334155" : "#cbd5e1",
   };
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/share/")) {
+      const id = path.split("/share/")[1];
+      setShareId(id);
+      fetch(`${API}/share/${id}`)
+        .then(res => res.json())
+        .then(data => setSharedCode(data.code || "Code not found."));
+    }
+  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => setChecking(false), 5000);
@@ -64,6 +77,55 @@ function App() {
     });
     setUser(null);
   };
+
+  // Share page — no login needed
+  if (shareId) return (
+    <div style={{
+      minHeight: "100vh", background: "#0f172a",
+      color: "white", padding: "40px",
+      fontFamily: "Arial, sans-serif"
+    }}>
+      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <h2 style={{ marginBottom: "4px" }}>🔗 Shared Python Code</h2>
+        <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+          Someone shared this code with you via Python AI Tutor
+        </p>
+
+        <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+          <button
+            onClick={() => navigator.clipboard.writeText(sharedCode)}
+            style={{
+              background: "#3b82f6", color: "white",
+              border: "none", padding: "8px 16px",
+              borderRadius: "6px", cursor: "pointer"
+            }}
+          >
+            📋 Copy Code
+          </button>
+          <button
+            onClick={() => window.location.href = "/"}
+            style={{
+              background: "#8b5cf6", color: "white",
+              border: "none", padding: "8px 16px",
+              borderRadius: "6px", cursor: "pointer"
+            }}
+          >
+            🐍 Open Python Tutor
+          </button>
+        </div>
+
+        <pre style={{
+          background: "#020617", color: "#86efac",
+          padding: "24px", borderRadius: "10px",
+          fontSize: "14px", lineHeight: "1.7",
+          overflowX: "auto", border: "1px solid #334155",
+          minHeight: "200px"
+        }}>
+          {sharedCode || "⏳ Loading..."}
+        </pre>
+      </div>
+    </div>
+  );
 
   if (checking) return (
     <div style={{

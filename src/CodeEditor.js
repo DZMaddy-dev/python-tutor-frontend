@@ -9,6 +9,8 @@ function CodeEditor({ theme, setTheme }) {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   const runCode = useCallback(async () => {
     setLoading(true);
@@ -69,6 +71,21 @@ function CodeEditor({ theme, setTheme }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const shareCode = async () => {
+    setSharing(true);
+    setShareUrl("");
+    const res = await fetch(`${API}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    const url = `${window.location.origin}/share/${data.id}`;
+    setShareUrl(url);
+    navigator.clipboard.writeText(url);
+    setSharing(false);
+  };
+
   const templates = {
     "Hello World": "print('Hello, World!')",
     "For Loop": "for i in range(5):\n    print(i)",
@@ -107,7 +124,6 @@ function CodeEditor({ theme, setTheme }) {
               border: "none", padding: "8px 14px",
               borderRadius: "6px", cursor: "pointer", fontSize: "16px"
             }}
-            title="Toggle Theme"
           >
             {isDark ? "☀️ Light" : "🌙 Dark"}
           </button>
@@ -119,12 +135,35 @@ function CodeEditor({ theme, setTheme }) {
               padding: "8px 14px", borderRadius: "6px",
               cursor: "pointer", fontSize: "14px"
             }}
-            title="Copy Code"
           >
             {copied ? "✅ Copied!" : "📋 Copy"}
           </button>
+          <button
+            onClick={shareCode}
+            disabled={sharing}
+            style={{
+              background: sharing ? "#64748b" : "#8b5cf6",
+              color: "white", border: "none",
+              padding: "8px 14px", borderRadius: "6px",
+              cursor: "pointer", fontSize: "14px"
+            }}
+          >
+            {sharing ? "⏳..." : "🔗 Share"}
+          </button>
         </div>
       </div>
+
+      {shareUrl && (
+        <div style={{
+          marginBottom: "10px", padding: "10px",
+          background: colors.card,
+          border: `1px solid ${colors.border}`,
+          borderRadius: "6px", fontSize: "13px",
+          color: colors.text
+        }}>
+          ✅ Link copied to clipboard! <span style={{ color: "#8b5cf6" }}>{shareUrl}</span>
+        </div>
+      )}
 
       <div style={{ marginBottom: "10px" }}>
         <select
