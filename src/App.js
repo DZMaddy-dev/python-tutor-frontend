@@ -26,13 +26,18 @@ function App() {
   };
 
   useEffect(() => {
+    const timeout = setTimeout(() => setChecking(false), 5000);
     fetch(`${API}/me`, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.loggedIn) setUser(data.username);
+        clearTimeout(timeout);
         setChecking(false);
       })
-      .catch(() => setChecking(false));
+      .catch(() => {
+        clearTimeout(timeout);
+        setChecking(false);
+      });
   }, []);
 
   const [streak, setStreak] = useState(() => {
