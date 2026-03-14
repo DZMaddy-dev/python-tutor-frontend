@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import API from "./config";
 
 function CodeEditor({ theme, setTheme }) {
@@ -10,18 +10,7 @@ function CodeEditor({ theme, setTheme }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey && e.key === "Enter") {
-        e.preventDefault();
-        runCode();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [code, userInput]);
-
-  const runCode = async () => {
+  const runCode = useCallback(async () => {
     setLoading(true);
     setOutput("");
     const res = await fetch(`${API}/run`, {
@@ -36,7 +25,18 @@ function CodeEditor({ theme, setTheme }) {
       setOutput(data.error + "\n\nExplanation:\n" + data.explanation);
     }
     setLoading(false);
-  };
+  }, [code, userInput]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        runCode();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [runCode]);
 
   const explainCode = async () => {
     setLoading(true);

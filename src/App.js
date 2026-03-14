@@ -51,7 +51,7 @@ function App() {
     };
     setStreak(newStreak);
     localStorage.setItem("streakData", JSON.stringify(newStreak));
-  }, []);
+  }, [streak.lastDate, streak.count]);
 
   const logout = async () => {
     await fetch(`${API}/logout`, {
